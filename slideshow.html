@@ -22,6 +22,7 @@
 class: center, middle
 
 # Hacking In Clojure
+### Farmlogs Backend Team
 
 ---
 
@@ -83,14 +84,14 @@ That's it!
    :headers {"Content-Type" "text/html"}
    :body "Hello World"})
 ```
-* To actually run the app, you plug the function into some magic java
+* To run the app, you plug the function into some magic java
 server adapter which handles the actual requesting and responsing
 
 * Very simple, and (as we'll soon see), *very* powerful
 ---
 # First, "Higher Order Functions"
 * Any function that takes another function as an argument and/or
-returns a function
+returns a function as its result
 
 * The most well-known examples are the classic collection processing
 functions: `map`, `filter`, `reduce` etc.
@@ -140,6 +141,115 @@ every request:
 We can create an authenticated web app from our old web app using
 higher-order functions!
 ---
+# Obligatory Lisp Macro Slide(s)
+Lisps have a proud tradition of utilizing the power of _macros_, which
+you can think of as "functions" (not technically functions) that
+manipulate code at compile time instead of data at runtime
+
+For example, Clojure has a `time` macro takes some code, and returns
+some new code that prints the amount of time that code took to
+execute:
+```clojure
+(time (reduce + [1 2 3 4]))
+; prints something like "Elapsed time: 0.038252 msecs", returns 10
+```
+The approximate source code of `time` (if you dare!)
+```clojure
+(defmacro time [expr]
+  `(let [start# (. System (nanoTime))
+         ret# ~expr]
+     (prn (str "Elapsed time: " 
+            (/ (double (- (. System (nanoTime)) start#)) 1000000.0) 
+            " msecs"))
+     ret#))
+```
+---
+# Fancier Macros
+Macros are especially useful for extending or modifying language
+syntax.
+
+Would you rather write this?
+```clojure
+(defn arbitrary-arithmetic [x y z]
+  (/ (* 2 y) (+ z (- x y))))
+```
+Or this?
+```clojure
+(defn arbitrary-arithmetic [x y z]
+  ($= 
+    (2 * y) / (z + x - y)))
+```
+Thanks to the `$=` macro from
+[Incanter](http://incanter.org/) (a clojure math and stats library), you can
+write math the way your (or most people's) brains think.
+---
+# Testing Clojure Apps
+Testing is important.
+
+By default, all Clojure applications have access to a nice set of
+macros in `clojure.test`
+```clojure
+(defn set-cookie [name value request] ...) ; another fake cookie function
+(def request { }) ; empty map, doesn't really matter for this toy app
+(def authed-request 
+  (set-cookie "session" "superSecretSessionId" request))
+ 
+(deftest security-policy
+  (let [good-response (secure-app authed-request)
+        ; remember that ring apps are just functions!
+        bad-response (secure-app request)] 
+    (is (= good-response "Hello World"))
+    (is (= 403 (:status bad-response)))
+    (is (= "You're not allowed!" (:body bad-response)))))
+```
+Because `is` is a macro, when the test fails, it can tell you exactly
+  what the code was supposed to look like.
+---
+# Real World Example! Macros + Testing = Win
+If you've ever tested anything in real life, you've probably written
+  code like this:
+```python
+initialize_lots_of_fake_data() 
+# this function is usually super annoying to write
+
+run_tests()
+
+delete_fake_data() # same with this one
+```
+At Farmlogs, we wrote a macro to automate the annoying parts
+```clojure
+(deftest test-database-stuff
+  (with-data [data [data-model-1]
+              more-data [data-model-2]]
+    (do-test-stuff data more-data))))
+```
+`with-data` initializes data with the given types in your local
+database, then cleans it up for you automatically when whatever code
+inside it is done. It's saved us a *ton* of time in test writing. 
+---
+# Extra Credit
+We've only just scratched the surface of the wonderful world of
+Clojure, there are so many other things to learn about, such as:
+# (Everyone should add stuff here)
+* Persistent data structures, lazy sequences, and other functional programming goodies
+
+* Compojure, a set of macros for defining routes in real apps
+
+```clojure
+(defroutes app
+  (GET "/" [] "Hello World")
+  (POST "/data" [request] 
+   (post-some-data request))
+  (route/not-found "Page not found"))
+```
+* [Every talk](http://thechangelog.com/rich-hickeys-greatest-hits/) by
+Rich Hickey, creator of Clojure 
+
+* [ClojureScript](https://github.com/clojure/clojurescript), Clojure that runs on top of JavaScript instead of the
+JVM
+---
+class: center, middle
+# Thank You!
 
 
     </textarea>
