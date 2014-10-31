@@ -70,6 +70,42 @@ In lisps, *everything* is an s-expression...
 ```
 That's it!
 ---
+# How to Server in Clojure: Ring
+* From the [Github Page](https://github.com/ring-clojure/ring)
+> Ring is a Clojure web applications library inspired by Python's WSGI
+  and Ruby's Rack
+
+* A Ring application is just a clojure function:
+
+```clojure
+(defn handler [request]
+  {:status 200
+   :headers {"Content-Type" "text/html"}
+   :body "Hello World"})
+```
+* To actually run the app, you plug the function into some magic java
+server adapter which handles the actual requesting and responsing
+
+* Very simple, and (as we'll soon see), *very* powerful
+---
+# First, "Higher Order Functions"
+* Any function that takes another function as an argument and/or
+returns a function
+
+* These exists in *many* languages: Javascript, Python, Ruby, Scala,
+Haskell...
+
+* The most well-known examples are the classic collection processing
+functions: `map`, `filter`, `reduce` etc.
+
+```clojure
+(map inc [1 2 3]) ; => (2 3 4)
+
+(filter pos? [-8 -2 1 9 3]) ; => (1 9 3)
+
+(reduce + [1 2 3]) ; => 6
+```
+
 
 
     </textarea>
