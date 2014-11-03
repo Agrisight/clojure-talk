@@ -132,7 +132,7 @@ every request:
 (defn wrap-authentication [handler]
   (fn [request]
     (let [session (get-cookie "session" request)]
-      (if (= "superSecretSesssionId" session)
+      (if (= "super-secret-session-id" session)
           (handler request)
           {:status 403 :body "You're not allowed!"}))))
 
@@ -182,6 +182,8 @@ Or this?
 Thanks to the `$=` macro from
 [Incanter](http://incanter.org/) (a clojure math and stats library), you can
 write math the way your (or most people's) brains think.
+
+The possiblities are endless!
 ---
 # Testing Clojure Apps
 Testing is important.
@@ -192,13 +194,14 @@ macros in `clojure.test`
 (defn set-cookie [name value request] ...) ; another fake cookie function
 (def request { }) ; empty map, doesn't really matter for this toy app
 (def authed-request 
-  (set-cookie "session" "superSecretSessionId" request))
- 
+  (set-cookie "session" "super-secret-session-id" request))
+
 (deftest security-policy
   (let [good-response (secure-app authed-request)
         ; remember that ring apps are just functions!
-        bad-response (secure-app request)] 
-    (is (= good-response "Hello World"))
+        bad-response (secure-app request)]
+    (is (= 200 (:status good-response)))
+    (is (= "Hello World" (:body good-response)))
     (is (= 403 (:status bad-response)))
     (is (= "You're not allowed!" (:body bad-response)))))
 ```
@@ -239,7 +242,7 @@ Clojure, there are so many other things to learn about, such as:
 (defroutes app
   (GET "/" [] "Hello World")
   (POST "/data" [request] 
-   (post-some-data request))
+    (post-some-data request))
   (route/not-found "Page not found"))
 ```
 * [Every talk](http://thechangelog.com/rich-hickeys-greatest-hits/) by
