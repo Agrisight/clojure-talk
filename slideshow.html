@@ -241,7 +241,7 @@ Clojure, there are so many other things to learn about, such as:
 ```clojure
 (defroutes app
   (GET "/" [] "Hello World")
-  (POST "/data" [request] 
+  (POST "/data" request 
     (post-some-data request))
   (route/not-found "Page not found"))
 ```
