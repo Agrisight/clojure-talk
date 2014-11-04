@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Title</title>
+    <title>Clojure</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style type="text/css">
       @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
@@ -32,7 +32,9 @@ class: center, middle
 * You can run the trivial examples from this slideshow in a REPL `lein
 repl`
 
-* To see our "complete" project, check out the repo at [Farmlogs/clojure-talk](https://github.com/Agrisight/clojure-talk).
+* To see our "complete" project, check out the repo at
+[Farmlogs/clojure-talk](https://github.com/Agrisight/clojure-talk).
+
 ---
 
 # Brief Intro to Clojure/Lisp
@@ -139,12 +141,20 @@ rainfall of all fields in Michigan
 (def michigan? (comp (partial = "MI") :state))
 
 (->> fields
-     (filter michigan?)
-     (map :rainfall)
-     (reduce +))
+     (filter michigan?) ; keep only field in Michigan
+     (map :rainfall) ; grab the :rainfall value from each
+     (reduce +)) ; add all of the values together
 ```
 `->>` is a macro, which we'll cover in a bit. For now you can just
      think of it as another part of Clojure syntax.
+
+If you want an example you can use in your repl, try
+```clojure
+(->> (range -5 5) ; generate set of numbers with negative numbers
+     (filter pos?) ; only keep positive numbers
+     (map inc) ; increment them all by one
+     (reduce +)) ; add it all together
+```
 ---
 # Back to Ring: Middleware
 Remember our simple app?
@@ -183,7 +193,7 @@ middleware, you can chain them together like anything else:
       (wrap-authentication) ; our middleware from before
       (wrap-json-response) ; auto-convert a non-ring map to json
       (wrap-cookies) ; convert cookies to an easy-to-use format
-      (wrap-gzip))) ; handle gzip 
+      (wrap-gzip))) ; handle gzip requests 
 ```
 ---
 # Obligatory Lisp Macro Slide(s)
@@ -204,7 +214,7 @@ As well as modifying language syntax itself
 (defn arbitrary-arithmetic [x y z]
   (/ (* 2 y) (+ z (- x y))))
 
-; using the "$=" macro from http://incater.org
+; using the "$=" macro from http://incanter.org
 (defn arbitrary-arithmetic [x y z]
   ($= 
     (2 * y) / (z + x - y)))
