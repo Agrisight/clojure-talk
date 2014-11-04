@@ -24,18 +24,6 @@ class: center, middle
 # Hacking In Clojure
 ### Farmlogs Backend Team
 ---
-# Start Clojuring
-* Make sure you have Java installed.
-
-* Download the leiningen script from http://leiningen.org/
-
-* You can run the trivial examples from this slideshow in a REPL `lein
-repl`
-
-* To see our "complete" project, check out the repo at
-[Farmlogs/clojure-talk](https://github.com/Agrisight/clojure-talk).
-
----
 
 # Brief Intro to Clojure/Lisp
 
@@ -64,9 +52,7 @@ In lisps, (almost) everything is an s-expression...
 ```clojure
 (def message "Hello World")
 
-(defn add-two-things 
-  "Add two numbers together"
-  [x y]
+(defn sum [x y]
   (+ x y))
 ```
 
@@ -92,22 +78,30 @@ That's it!
 * A Ring application is just a clojure function:
 
 ```clojure
-(defn app 
-  "A Ring application that greets you for every request"
-  [request]
+(defn app [request]
   {:status 200
    :headers {"Content-Type" "text/html"}
    :body "Hello World"})
 ```
-* To run the app, you plug the function into some magic java
+* To run the app, you plug the function into a magic java
 server adapter which handles the actual requesting and responsing
 
 * Very simple, and (as we'll soon see), *very* powerful
 ---
 # First, Higher Order Functions
 * Any function that takes another function as an argument and/or
-returns a function as its result
+returns a function as its result:
 
+```clojure
+(def filter-then-count (comp count filter))
+; just like in math f(g(x)), count(filter(...))
+
+(filter-then-count neg? [-3 -2 -1 1 2 3]) ; => 3
+
+(def add-two (partial sum 2)) ; we defined "sum" earlier
+
+(add-two 5) ; => 7
+```
 * The most well-known examples are the classic collection processing
 functions: `map`, `filter`, `reduce` etc.
 
@@ -118,23 +112,8 @@ functions: `map`, `filter`, `reduce` etc.
 
 (reduce + [1 2 3]) ; => 6
 ```
-* function composition and partial application:
-
-```clojure
-(def filter-then-count (comp count filter))
-; just like in math f(g(x)), count(filter(...))
-
-(filter-then-count neg? [-3 -2 -1 1 2 3]) ; => 3
-
-(def add-two (partial + 2))
-
-(add-two 5) ; => 7
-
-```
 ---
 # Chaining Together Functions
-
-
 Let's say we had a collection of fields, and wanted to find the total
 rainfall of all fields in Michigan
 ```clojure
@@ -159,9 +138,7 @@ If you want an example you can use in your repl, try
 # Back to Ring: Middleware
 Remember our simple app?
 ```clojure
-(defn app 
-  "A Ring application that greets you for every request"
-  [request]
+(defn app [request]
   {:status 200
    :headers {"Content-Type" "text/html"}
    :body "Hello World"})
@@ -169,16 +146,15 @@ Remember our simple app?
 "Hello World" is pretty sensitive info, so we should authenticate
 every request:
 ```clojure
-(defn get-cookie [name request] ...) ; not a valid clojure function
-
-(defn wrap-authentication 
-  "Checks every request for a valid cookie before continuing"
-  [handler]
+(defn wrap-authentication [handler]
   (fn [request]
     (if (= "super-secret-session-id" (get-cookie "session" request))
         (handler request)
         {:status 403 :body "You're not allowed!"})))
-
+```
+Now, we can build a new secure app from our old app simply by calling
+the wrapper function
+```clojure
 (def secure-app (wrap-authentication app)) ; hooray for higher-order functions!
 ```
 ---
@@ -189,7 +165,7 @@ middleware, you can chain them together like anything else:
 (defn app [request] ...)
 
 (def better-app
-  (-> app
+  (->> app
       (wrap-authentication) ; our middleware from before
       (wrap-json-response) ; auto-convert a non-ring map to json
       (wrap-cookies) ; convert cookies to an easy-to-use format
@@ -201,15 +177,8 @@ Lisps have a proud tradition of utilizing the power of _macros_, which
 you can think of as "functions" (not technically functions) that
 manipulate code at compile time instead of data at runtime.
 
-Macros can be useful for automating routine things like setting up and
-tearing down test data:
-```clojure
-(deftest test-database-stuff
-  (with-data [person [person-model]
-              pet [pet-model {:person person}]]
-    (do-test-stuff person pet))))
-```
-As well as modifying language syntax itself
+Macros are incredibily useful for modifying language syntax:
+
 ```clojure
 (defn arbitrary-arithmetic [x y z]
   (/ (* 2 y) (+ z (- x y))))
@@ -218,6 +187,12 @@ As well as modifying language syntax itself
 (defn arbitrary-arithmetic [x y z]
   ($= 
     (2 * y) / (z + x - y)))
+```
+as well as things like setting up and tearing down test data:
+```clojure
+(with-data [person [person-model]
+            pet [pet-model {:person person}]]
+  (do-test-stuff person pet))
 ```
 ---
 # Writing Real Web Apps with Macros
@@ -266,13 +241,22 @@ Because `testing` and `is` are both macros, when the test fails, it
 can tell you exactly what code failed, not just whatever was passed
 into a comparison function.
 ---
-# Further Learning
+# Extra Credit
 We've only just scratched the surface of the wonderful world of
 Clojure, if you want to learn more, you should check out:
 
 * [Clojure for the Brave and True](http://www.braveclojure.com/), a
 great book that covers nearly all important language concepts and
 features
+
+* [4Clojure](https://www.4clojure.com/), an interactive set of
+     problems to solve in clojure
+
+* [Try Clojure](http://www.tryclj.com/) has an interactive tour mode
+
+* [Clojure Koans](http://clojurekoans.com/) a set of problems similar
+     to 4Clojure that you run on your local machine, so you can learn
+     about Clojure's excellent tooling while you're at it.
 
 * [Simple Made
 Easy](http://www.infoq.com/presentations/Simple-Made-Easy) by Rich
