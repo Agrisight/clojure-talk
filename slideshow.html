@@ -4,9 +4,9 @@
     <title>Title</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style type="text/css">
-      @import url(http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
-      @import url(http://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
-      @import url(http://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
 
       body { font-family: 'Droid Serif'; }
       h1, h2, h3 {
@@ -174,15 +174,16 @@ every request:
 ---
 # More Middleware
 Since middleware are just functions, and most real apps use a lot of
-middlware, you can chain them together like anything else:
+middleware, you can chain them together like anything else:
 ```clojure
 (defn app [request] ...)
 
 (def better-app
   (-> app
-      (wrap-authentication)
-      (wrap-json)
-      (wrap-cookies)))
+      (wrap-authentication) ; our middleware from before
+      (wrap-json-response) ; auto-convert a non-ring map to json
+      (wrap-cookies) ; convert cookies to an easy-to-use format
+      (wrap-gzip))) ; handle gzip 
 ```
 ---
 # Obligatory Lisp Macro Slide(s)
@@ -274,7 +275,7 @@ class: center, middle
 # Questions?
 
     </textarea>
-    <script src="http://gnab.github.io/remark/downloads/remark-latest.min.js" type="text/javascript">
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js" type="text/javascript">
     </script>
     <script type="text/javascript">
       var slideshow = remark.create();
