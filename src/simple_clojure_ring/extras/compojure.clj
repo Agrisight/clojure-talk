@@ -5,21 +5,26 @@
 
 (def next-fake-id
   (let [id (atom 0)]
-    (fn []
-      (str (swap! id inc)))))
+    (fn [] (str (swap! id inc)))))
 
 (def the-fakest-data (atom {}))
+
+(defn post-some-data [request]
+  (let [params (:params request)
+        id (next-fake-id)]
+    (swap! the-fakest-data
+           assoc id params)
+    id))
+
+(defn get-some-data [id]
+  (str (get @the-fakest-data id)))
 
 (defroutes app
   (GET "/" [] "Hello World")
   (POST "/data" request
-        (let [params (:params request)
-              id (next-fake-id)]
-          (swap! the-fakest-data
-                 assoc id params)
-          id))
+        (post-some-data request))
   (GET "/data/:id" [id]
-       (str (get @the-fakest-data id))))
+       (get-some-data id)))
 
 (defn -main [& args]
   (run-jetty (wrap-params app)

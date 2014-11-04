@@ -1,14 +1,9 @@
-# simple-clojure-ring
+# Farmlogs Clojure Talk
 
-A Clojure library designed to ... well, that part is up to you.
+All material from our intro to Clojure talk.
 
-## Usage
+Make sure you have [java](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (your package manager probably already covers this) and [leiningen](http://leiningen.org/) installed!
 
-FIXME
+Copyright © 2014 Farmlogs Inc.
 
-## License
-
-Copyright © 2014 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the Eclipse Public License version 1.0

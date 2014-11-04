@@ -23,7 +23,16 @@ class: center, middle
 
 # Hacking In Clojure
 ### Farmlogs Backend Team
+---
+# Start Clojuring
+First, make sure you have Java installed.
 
+Then, download the leiningen script from http://leiningen.org/
+
+You can run the trivial examples from this slideshow in a REPL `lein
+repl`
+
+To see our "complete" project, check out the repo at Farmlogs/clojure-talk.
 ---
 
 # Brief Intro to Clojure/Lisp
@@ -43,7 +52,7 @@ foo(1, 3, 4)
 ```clojure
 (whatever-you-are-doing arg1 arg2 ...) ; those dots are not valid clojure
 ```
-In lisps, *everything* is an s-expression...
+In lisps, (almost) everything is an s-expression...
 
 (continued on next slide)
 ---
@@ -54,20 +63,22 @@ In lisps, *everything* is an s-expression...
 (def message "Hello World")
 
 (defn add-two-things 
-  "Obligatory useless addition example"
+  "Add two numbers together"
   [x y]
   (+ x y))
 ```
 
-* Control statements
+* Control "statements" (expressions)
 
 ```clojure
 (if (predicate? item) 
   (do-something item) 
   (do-something-else item))
 
-(while true 
-  (do-something-endlessly))
+(case item
+  "foo" (do-foo item)
+  "bar" (do-bar item)
+  (do-default item))
 ```
 That's it!
 ---
@@ -79,7 +90,9 @@ That's it!
 * A Ring application is just a clojure function:
 
 ```clojure
-(defn app [request]
+(defn app 
+  "A Ring application that greets you for every request"
+  [request]
   {:status 200
    :headers {"Content-Type" "text/html"}
    :body "Hello World"})
@@ -89,7 +102,7 @@ server adapter which handles the actual requesting and responsing
 
 * Very simple, and (as we'll soon see), *very* powerful
 ---
-# First, "Higher Order Functions"
+# First, Higher Order Functions
 * Any function that takes another function as an argument and/or
 returns a function as its result
 
@@ -107,6 +120,7 @@ functions: `map`, `filter`, `reduce` etc.
 
 ```clojure
 (def filter-then-count (comp count filter))
+; just like in math f(g(x)), count(filter(...))
 
 (filter-then-count neg? [-3 -2 -1 1 2 3]) ; => 3
 
@@ -116,10 +130,28 @@ functions: `map`, `filter`, `reduce` etc.
 
 ```
 ---
-# Back to Ring: Middleware
-Remember our simple  app?
+# Chaining Together Functions
+
+
+Let's say we had a collection of fields, and wanted to find the total
+rainfall of all fields in Michigan
 ```clojure
-(defn app [request]
+(def michigan? (comp (partial = "MI") :state))
+
+(->> fields
+     (filter michigan?)
+     (map :rainfall)
+     (reduce +))
+```
+`->>` is a macro, which we'll cover in a bit. For now you can just
+     think of it as another part of Clojure syntax.
+---
+# Back to Ring: Middleware
+Remember our simple app?
+```clojure
+(defn app 
+  "A Ring application that greets you for every request"
+  [request]
   {:status 200
    :headers {"Content-Type" "text/html"}
    :body "Hello World"})
@@ -129,61 +161,77 @@ every request:
 ```clojure
 (defn get-cookie [name request] ...) ; not a valid clojure function
 
-(defn wrap-authentication [handler]
+(defn wrap-authentication 
+  "Checks every request for a valid cookie before continuing"
+  [handler]
   (fn [request]
-    (let [session (get-cookie "session" request)]
-      (if (= "super-secret-session-id" session)
-          (handler request)
-          {:status 403 :body "You're not allowed!"}))))
+    (if (= "super-secret-session-id" (get-cookie "session" request))
+        (handler request)
+        {:status 403 :body "You're not allowed!"})))
 
-(def secure-app (wrap-authentication app))
+(def secure-app (wrap-authentication app)) ; hooray for higher-order functions!
 ```
-We can create an authenticated web app from our old web app using
-higher-order functions!
+---
+# More Middleware
+Since middleware are just functions, and most real apps use a lot of
+middlware, you can chain them together like anything else:
+```clojure
+(defn app [request] ...)
+
+(def better-app
+  (-> app
+      (wrap-authentication)
+      (wrap-json)
+      (wrap-cookies)))
+```
 ---
 # Obligatory Lisp Macro Slide(s)
 Lisps have a proud tradition of utilizing the power of _macros_, which
 you can think of as "functions" (not technically functions) that
-manipulate code at compile time instead of data at runtime
+manipulate code at compile time instead of data at runtime.
 
-For example, Clojure has a `time` macro takes some code, and returns
-some new code that prints the amount of time that code took to
-execute:
+Macros can be useful for automating routine things like setting up and
+tearing down test data:
 ```clojure
-(time (reduce + [1 2 3 4]))
-; prints something like "Elapsed time: 0.038252 msecs", returns 10
+(deftest test-database-stuff
+  (with-data [person [person-model]
+              pet [pet-model {:person person}]]
+    (do-test-stuff person pet))))
 ```
-The approximate source code of `time` (if you dare!)
-```clojure
-(defmacro time [expr]
-  `(let [start# (. System (nanoTime))
-         ret# ~expr]
-     (prn (str "Elapsed time: " 
-            (/ (double (- (. System (nanoTime)) start#)) 1000000.0) 
-            " msecs"))
-     ret#))
-```
----
-# Fancier Macros
-Macros are especially useful for extending or modifying language
-syntax.
-
-Would you rather write this?
+As well as modifying language syntax itself
 ```clojure
 (defn arbitrary-arithmetic [x y z]
   (/ (* 2 y) (+ z (- x y))))
-```
-Or this?
-```clojure
+
+; using the "$=" macro from http://incater.org
 (defn arbitrary-arithmetic [x y z]
   ($= 
     (2 * y) / (z + x - y)))
 ```
-Thanks to the `$=` macro from
-[Incanter](http://incanter.org/) (a clojure math and stats library), you can
-write math the way your (or most people's) brains think.
-
-The possiblities are endless!
+---
+# Writing Real Web Apps with Macros
+For most web apps that aren't toy examples, you can use Compojure, a
+set of macros for defining routes in a sane, high-level way:
+```clojure
+(defroutes app
+  (GET "/" [] "Hello World")
+  (POST "/data" request
+        (post-some-data request))
+  (GET "/data/:id" [id]
+       (get-some-data id)))
+```
+`defroutes`, `GET` and `POST` all compile down to something like this:
+```clojure
+(defn app [request]
+  (if (and (= (:uri request) "/") 
+           (= (:request-method request) :get))
+    {:status 200 :body "Hello World"}
+    (if (and (= (:uri request) "/data")
+             (= (:request-method request) :post))
+      (post-some-data request)
+      ...)))
+```
+Much easier than writing all of that out by hand!
 ---
 # Testing Clojure Apps
 Testing is important.
@@ -191,60 +239,26 @@ Testing is important.
 By default, all Clojure applications have access to a nice set of
 macros in `clojure.test`
 ```clojure
-(defn set-cookie [name value request] ...) ; another fake cookie function
-(def request { }) ; empty map, doesn't really matter for this toy app
-(def authed-request 
-  (set-cookie "session" "super-secret-session-id" request))
-
 (deftest security-policy
-  (let [good-response (secure-app authed-request)
-        ; remember that ring apps are just functions!
-        bad-response (secure-app request)]
-    (is (= 200 (:status good-response)))
-    (is (= "Hello World" (:body good-response)))
-    (is (= 403 (:status bad-response)))
-    (is (= "You're not allowed!" (:body bad-response)))))
-```
-Because `is` is a macro, when the test fails, it can tell you exactly
-  what the code was supposed to look like.
----
-# Real World Example! Macros + Testing = Win
-If you've ever tested anything in real life, you've probably written
-  code like this:
-```python
-initialize_lots_of_fake_data() 
-# this function is usually super annoying to write
 
-run_tests()
+  (testing "authorized requests are allowed"
+    (let [response (secure-app authed-request)]
+      (is (= 200 (:status good-response)))
+      (is (= "Hello World" (:body good-response)))))
 
-delete_fake_data() # same with this one
+  (testing "unauthorized requests are not allowed"
+     (let [bad-response (secure-app bad-request)]
+       (is (= 403 (:status bad-response)))
+       (is (= "You're not allowed!" (:body bad-response))))))
 ```
-At Farmlogs, we wrote a macro to automate the annoying parts
-```clojure
-(deftest test-database-stuff
-  (with-data [data [data-model-1]
-              more-data [data-model-2]]
-    (do-test-stuff data more-data))))
-```
-`with-data` initializes data with the given types in your local
-database, then cleans it up for you automatically when whatever code
-inside it is done. It's saved us a *ton* of time in test writing. 
+Because `testing` and `is` are both macros, when the test fails, it
+can tell you exactly what code failed, not just whatever was passed
+into a comparison function.
 ---
 # Extra Credit
 We've only just scratched the surface of the wonderful world of
 Clojure, there are so many other things to learn about, such as:
-# (Everyone should add stuff here)
-* Persistent data structures, lazy sequences, and other functional programming goodies
 
-* Compojure, a set of macros for defining routes in real apps
-
-```clojure
-(defroutes app
-  (GET "/" [] "Hello World")
-  (POST "/data" request 
-    (post-some-data request))
-  (route/not-found "Page not found"))
-```
 * [Every talk](http://thechangelog.com/rich-hickeys-greatest-hits/) by
 Rich Hickey, creator of Clojure 
 
@@ -252,8 +266,7 @@ Rich Hickey, creator of Clojure
 JVM
 ---
 class: center, middle
-# Thank You!
-
+# Questions?
 
     </textarea>
     <script src="http://gnab.github.io/remark/downloads/remark-latest.min.js" type="text/javascript">
